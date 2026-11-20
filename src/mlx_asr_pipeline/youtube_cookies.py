@@ -10,7 +10,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
-PROFILE_NAME = "02-0xtimi2233"
+PROFILE_NAME = ""
 OUTPUT_FILE = ""
 COOKIE_URLS = [
     "https://www.youtube.com",
@@ -170,14 +170,14 @@ def _build_parser() -> argparse.ArgumentParser:
         epilog=(
             "Examples:\n"
             f"  COOKIE_PATH=$({_TOOL_NAME} -q)\n"
-            f'  {_TOOL_NAME} --profile "{PROFILE_NAME}" --json'
+            f'  {_TOOL_NAME} --profile "Profile 1" --json'
         ),
     )
     parser.add_argument("-h", "--help", action="store_true", help="Print help")
     parser.add_argument(
         "--profile",
         default=PROFILE_NAME,
-        help=f"Ego Browser profile name or ID [default: {PROFILE_NAME}]",
+        help="Ego Browser profile name or ID (default: browser default profile)",
     )
     parser.add_argument(
         "-o",

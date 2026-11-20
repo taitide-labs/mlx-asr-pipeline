@@ -17,7 +17,7 @@
 
 ## 背景
 
-相比早期基于外部 `oMLX` HTTP 服务与多段 FFmpeg 临时 `.m4a` 切片的方案，本流水线直接基于进程内 `mlx_qwen3_asr.Session` 执行推理与对齐：
+本流水线在单进程内直接调用 `mlx_qwen3_asr.Session` 执行解码、语音识别与词级强制对齐，不依赖外部推理服务或中间切片文件：
 
 ```mermaid
 flowchart LR
@@ -27,7 +27,7 @@ flowchart LR
   D --> E["group_subtitle_segments 断句 -> SRT"]
 ```
 
-- **零外部服务依赖**：摆脱 `oMLX.app` 守护进程与内部 Python 路径耦合，避免 HTTP 超时与临时音频文件 I/O。
+- **进程内零外部服务依赖**：无需启动额外推理守护进程或通过 HTTP 转发音频请求，单次 16kHz 内存解码后直接推理，避免超时与多段临时音频文件 I/O。
 - **黄金模型组合**：默认采用 `moona3k/mlx-qwen3-asr-1.7b-8bit` 搭配未量化原版 `Qwen/Qwen3-ForcedAligner-0.6B`，在保持 `float16` 激活计算与时间戳精度的同时控制显存占用。
 - **双层静音切分与断点续传**：外层每 `300` 秒按最低能量静音点切分并刷新 `.srt` 与 `checkpoint.json`；内层交给 `mlx-qwen3-asr` 自动按 `<=30` 秒静音点切分并清理 Metal 缓存，同时保留库内默认语言自动检测、动态生成上限与字幕行宽平衡策略。
 
@@ -47,7 +47,12 @@ uv sync --locked
 转写音视频并生成字幕文件（进度输出至 `stderr`，产物路径输出至 `stdout`）：
 
 ```sh
+# 指定英文并注入领域术语提示
 uv run mlx-asr-pipeline talk.mp4 -o talk.en.srt -l English -c "Grokbot PStack TLA+ Lean"
+
+# 指定中文或日语（同样支持 en / zh / ja 等常用简写）
+uv run mlx-asr-pipeline lecture.mp4 -l Chinese
+uv run mlx-asr-pipeline episode.mp4 -l Japanese
 ```
 
 静音流式输出到 `stdout`（适合脚本与 Agent 调用，避免日志污染上下文）：
@@ -62,7 +67,7 @@ uv run mlx-asr-pipeline talk.mp4 -o - --quiet > talk.en.srt
 | :--- | :--- | :--- |
 | `INPUT` | 必填 | 输入音频或视频文件路径 |
 | `-o, --output <PATH>` | `<input_stem>.srt` | 输出 `.srt` 路径；传 `-` 时直接输出到 `stdout` |
-| `-l, --language <LANG>` | 自动检测 | 强制指定识别语言（默认遵循库内自动检测） |
+| `-l, --language <LANG>` | 自动检测 | 强制指定识别语言（默认遵循库内自动检测）；常用标识：英文 `English`（`en`）、中文 `Chinese`（`zh`）、日语 `Japanese`（`ja`） |
 | `-c, --context <TEXT>` | 空 | 领域专有名词或上下文提示，用于在声学解码阶段纠偏术语 |
 | `--asr-model <ID>` | `moona3k/mlx-qwen3-asr-1.7b-8bit` | ASR 模型标识或本地目录 |
 | `--aligner-model <ID>` | `Qwen/Qwen3-ForcedAligner-0.6B` | ForcedAligner 模型标识或本地目录 |
@@ -79,10 +84,10 @@ uv run mlx-asr-pipeline talk.mp4 -o - --quiet > talk.en.srt
 
 ```sh
 COOKIE_PATH=$(uv run yt-cookies --quiet)
-uv run yt-cookies --profile "02-0xtimi2233" --json
+uv run yt-cookies --profile "Profile 1" --json
 ```
 
-完整下载、静音转写与翻译 SOP 见 [SOP.md](SOP.md)。
+完整下载、静音转写与翻译 SOP 见 [docs/SOP.md](docs/SOP.md)。
 
 ## 开发检查
 
