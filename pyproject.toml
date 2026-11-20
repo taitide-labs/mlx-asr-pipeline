@@ -1,0 +1,26 @@
+[project]
+name = "mlx-asr-pipeline"
+version = "0.1.0"
+description = "Native Apple Silicon MLX ASR and forced-alignment subtitle pipeline."
+readme = "README.md"
+authors = [
+    { name = "superxxl", email = "a1642947049@gmail.com" },
+]
+license = "MIT"
+requires-python = ">=3.14"
+dependencies = [
+    "mlx-qwen3-asr[aligner]>=0.4.4",
+]
+
+[project.scripts]
+mlx-asr-pipeline = "mlx_asr_pipeline:entrypoint"
+yt-cookies = "mlx_asr_pipeline.youtube_cookies:entrypoint"
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
