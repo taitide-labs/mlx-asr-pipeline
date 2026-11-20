@@ -111,4 +111,4 @@ rm -f "$COOKIE_PATH"
 
 ## 许可证
 
-[MIT](LICENSE) © 2026 Taitide Labs
+[MIT](../LICENSE) © 2026 Taitide Labs

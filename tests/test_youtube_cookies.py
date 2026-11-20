@@ -39,8 +39,8 @@ def test_export_cookies_formats(
 
     def fake_runner(*args: Any, **kwargs: Any) -> SimpleNamespace:
         payload = {
-            "profileName": "02-0xtimi2233",
-            "profileId": "Profile 6",
+            "profileName": "default-profile",
+            "profileId": "Profile 1",
             "cookieCount": 42,
             "outputPath": str(cookie_path),
         }
@@ -64,7 +64,7 @@ def test_export_cookies_formats(
     assert youtube_cookies.run(["-o", str(cookie_path), "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
     assert data["cookie_count"] == 42
-    assert data["profile_id"] == "Profile 6"
+    assert data["profile_id"] == "Profile 1"
 
 
 def fake_export(profile: str, output: str, runner: Any) -> dict[str, Any]:
