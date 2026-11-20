@@ -47,10 +47,8 @@ uv sync --locked
 转写音视频并生成字幕文件（进度输出至 `stderr`，产物路径输出至 `stdout`）：
 
 ```sh
-# 指定英文并注入领域术语提示
+# 指定英文、中文或日语（也可使用等价代码 en / zh / ja）
 uv run mlx-asr-pipeline talk.mp4 -o talk.en.srt -l English -c "Grokbot PStack TLA+ Lean"
-
-# 指定中文或日语（同样支持 en / zh / ja 等常用简写）
 uv run mlx-asr-pipeline lecture.mp4 -l Chinese
 uv run mlx-asr-pipeline episode.mp4 -l Japanese
 ```
@@ -67,7 +65,7 @@ uv run mlx-asr-pipeline talk.mp4 -o - --quiet > talk.en.srt
 | :--- | :--- | :--- |
 | `INPUT` | 必填 | 输入音频或视频文件路径 |
 | `-o, --output <PATH>` | `<input_stem>.srt` | 输出 `.srt` 路径；传 `-` 时直接输出到 `stdout` |
-| `-l, --language <LANG>` | 自动检测 | 强制指定识别语言（默认遵循库内自动检测）；常用标识：英文 `English`（`en`）、中文 `Chinese`（`zh`）、日语 `Japanese`（`ja`） |
+| `-l, --language <LANG>` | 自动检测 | 强制指定识别语言（默认遵循库内自动检测）；支持规范名 `English` / `Chinese` / `Japanese` 或等价代码 `en` / `zh` / `ja`（完整列表可执行 `uv run mlx-qwen3-asr --list-languages` 查看） |
 | `-c, --context <TEXT>` | 空 | 领域专有名词或上下文提示，用于在声学解码阶段纠偏术语 |
 | `--asr-model <ID>` | `moona3k/mlx-qwen3-asr-1.7b-8bit` | ASR 模型标识或本地目录 |
 | `--aligner-model <ID>` | `Qwen/Qwen3-ForcedAligner-0.6B` | ForcedAligner 模型标识或本地目录 |

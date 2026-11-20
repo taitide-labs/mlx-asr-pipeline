@@ -1,7 +1,5 @@
 # YouTube 视频下载与字幕生成 SOP
 
-[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
-
 > 基于 Ego Browser、`yt-dlp` 与原生 `mlx-asr-pipeline` 的高清视频拉取及中文字幕制作标准操作规程。
 
 本规程全链路优先采用静音与 `stdout` 管道模式执行，避免冗余进度日志污染终端或 Agent 上下文。
@@ -11,7 +9,6 @@
 - [背景](#背景)
 - [前置条件](#前置条件)
 - [操作流程](#操作流程)
-- [许可证](#许可证)
 
 ## 背景
 
@@ -108,7 +105,3 @@ Constraints: Silence verbose logs; report only final path and verification count
 ```sh
 rm -f "$COOKIE_PATH"
 ```
-
-## 许可证
-
-[MIT](../LICENSE) © 2026 Taitide Labs
