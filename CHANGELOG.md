@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.1](https://github.com/taitide-labs/mlx-asr-pipeline/compare/v0.1.0...v0.1.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* **cookies,docs:** 清理 README 无关上下文并恢复默认 Profile 回落 ([#4](https://github.com/taitide-labs/mlx-asr-pipeline/issues/4)) ([7b92cac](https://github.com/taitide-labs/mlx-asr-pipeline/commit/7b92cacdf805ce448a5ab1e3dba03e6c8ecfd519))
+* **tests:** 从 pyproject.toml 动态读取版本号以兼容自动发版 ([#6](https://github.com/taitide-labs/mlx-asr-pipeline/issues/6)) ([dc239f9](https://github.com/taitide-labs/mlx-asr-pipeline/commit/dc239f96334d565ccb9108ba91ccffef615b5abd))
+
+
+### Documentation
+
+* 明确 README 语言参数规范并移除 SOP 许可证章节 ([#7](https://github.com/taitide-labs/mlx-asr-pipeline/issues/7)) ([9768a33](https://github.com/taitide-labs/mlx-asr-pipeline/commit/9768a33bd1c506e0cf0dfc0e98379a6440201688))
+
 ## 0.1.0 (2026-11-20)
 
 
