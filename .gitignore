@@ -1,0 +1,15 @@
+.DS_Store
+.idea/
+.vscode/
+.env
+.env*.local
+.rumdl_cache/
+dist/
+.venv/
+__pycache__/
+*.py[oc]
+.pytest_cache/
+.ruff_cache/
+build/
+wheels/
+*.egg-info
