@@ -1,12 +1,20 @@
+import tomllib
+from pathlib import Path
+
 import pytest
 
 from mlx_asr_pipeline import run
 
 
 def test_version(capsys: pytest.CaptureFixture[str]) -> None:
+    expected = tomllib.loads(
+        (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(
+            encoding="utf-8"
+        )
+    )["project"]["version"]
     assert run(["--version"]) == 0
     captured = capsys.readouterr()
-    assert captured.out.strip() == "mlx-asr-pipeline 0.1.0"
+    assert captured.out.strip() == f"mlx-asr-pipeline {expected}"
     assert captured.err == ""
 
 

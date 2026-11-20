@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import stat
+import tomllib
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -12,8 +13,13 @@ from mlx_asr_pipeline import youtube_cookies
 
 
 def test_yt_cookies_version_and_help(capsys: pytest.CaptureFixture[str]) -> None:
+    expected = tomllib.loads(
+        (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(
+            encoding="utf-8"
+        )
+    )["project"]["version"]
     assert youtube_cookies.run(["--version"]) == 0
-    assert capsys.readouterr().out.strip() == "yt-cookies 0.1.0"
+    assert capsys.readouterr().out.strip() == f"yt-cookies {expected}"
 
     assert youtube_cookies.run(["--help"]) == 0
     assert "usage: yt-cookies" in capsys.readouterr().out
