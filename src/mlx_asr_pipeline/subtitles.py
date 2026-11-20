@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import unicodedata
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
-
-from mlx_qwen3_asr.writers import group_subtitle_segments
 
 _MIN_CUE_DURATION_SEC = 0.08
 
@@ -112,11 +110,16 @@ def segments_to_cues(
     language: str = "",
     text: str | None = None,
     offset_sec: float = 0.0,
+    grouper: Callable[..., list[dict[str, Any]]] | None = None,
 ) -> list[dict[str, Any]]:
     if not segments:
         return []
+    if grouper is None:
+        from mlx_qwen3_asr.writers import group_subtitle_segments
+
+        grouper = group_subtitle_segments
     prepared = restore_punctuation_resilient(segments, text) if text else segments
-    grouped = group_subtitle_segments(prepared, language=language, text=None)
+    grouped = grouper(prepared, language=language, text=None)
     cues: list[dict[str, Any]] = []
     for seg in grouped:
         cue_text = str(seg.get("text", "")).strip()

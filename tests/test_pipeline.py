@@ -17,9 +17,32 @@ from mlx_asr_pipeline.pipeline import (
 from mlx_asr_pipeline.subtitles import (
     format_srt_timestamp,
     render_srt,
+    restore_punctuation_resilient,
     segments_to_cues,
     validate_timeline,
 )
+
+
+def _has_mlx_runtime() -> bool:
+    try:
+        import mlx.core  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def _fallback_grouper(
+    segments: list[dict[str, Any]], *, language: str = "", text: str | None = None
+) -> list[dict[str, Any]]:
+    if not segments:
+        return []
+    return [
+        {
+            "text": " ".join(str(s["text"]) for s in segments),
+            "start": segments[0]["start"],
+            "end": segments[-1]["end"],
+        }
+    ]
 
 
 class _FakeSession:
@@ -91,7 +114,13 @@ def test_segments_to_cues_preserves_punctuation_across_symbols() -> None:
         {"text": "100", "start": 0.7, "end": 1.0},
         {"text": "great", "start": 1.0, "end": 1.4},
     ]
-    cues = segments_to_cues(segments, language="English", text="TLA+ is 100% great!")
+    restored = restore_punctuation_resilient(segments, "TLA+ is 100% great!")
+    assert restored[-1]["text"] == "great!"
+
+    grouper = None if _has_mlx_runtime() else _fallback_grouper
+    cues = segments_to_cues(
+        segments, language="English", text="TLA+ is 100% great!", grouper=grouper
+    )
     assert len(cues) >= 1
     assert cues[-1]["text"].endswith("!")
     assert all(cue["end"] > cue["start"] for cue in cues)
@@ -137,6 +166,8 @@ def test_run_pipeline_and_checkpoint_resume(
     total_samples = SAMPLE_RATE * 65
     fake_audio = np.ones(total_samples, dtype=np.float32) * 0.01
 
+    grouper = None if _has_mlx_runtime() else _fallback_grouper
+
     res1 = run_pipeline(
         media,
         output_file=out_srt,
@@ -148,6 +179,7 @@ def test_run_pipeline_and_checkpoint_resume(
         session_factory=_FakeSession,
         aligner_factory=_FakeAligner,
         audio_loader=lambda _: fake_audio,
+        cue_grouper=grouper,
     )
     assert res1.cues >= 2
     assert res1.language == "English"
@@ -172,6 +204,7 @@ def test_run_pipeline_and_checkpoint_resume(
         session_factory=_FakeSession,
         aligner_factory=_FakeAligner,
         audio_loader=lambda _: fake_audio,
+        cue_grouper=grouper,
     )
     assert len(_FakeSession.calls) == prev_calls
     assert "Hello world 1." in res2.srt_text
@@ -189,5 +222,6 @@ def test_run_pipeline_and_checkpoint_resume(
         session_factory=_FakeSession,
         aligner_factory=_FakeAligner,
         audio_loader=lambda _: fake_audio,
+        cue_grouper=grouper,
     )
     assert len(_FakeSession.calls) > prev_calls

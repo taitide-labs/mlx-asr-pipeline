@@ -5,19 +5,19 @@ import json
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TextIO
 
 import numpy as np
-from mlx_qwen3_asr import ForcedAligner, Session
-from mlx_qwen3_asr.audio import SAMPLE_RATE, load_audio_np
 
 from mlx_asr_pipeline.subtitles import render_srt, segments_to_cues, write_srt
 
 DEFAULT_ASR_MODEL = "moona3k/mlx-qwen3-asr-1.7b-8bit"
 DEFAULT_ALIGNER_MODEL = "Qwen/Qwen3-ForcedAligner-0.6B"
 DEFAULT_CHUNK_SECONDS = 300
+SAMPLE_RATE = 16000
 
 
 @dataclass(frozen=True)
@@ -171,13 +171,19 @@ def run_pipeline(
     resume: bool = True,
     quiet: bool = False,
     verbose: bool = False,
-    session_factory: Any = Session,
-    aligner_factory: Any = ForcedAligner,
-    audio_loader: Any = load_audio_np,
+    session_factory: Any = None,
+    aligner_factory: Any = None,
+    audio_loader: Any = None,
+    cue_grouper: Callable[..., list[dict[str, Any]]] | None = None,
 ) -> PipelineResult:
     input_path = Path(input_file)
     if not input_path.is_file():
         raise FileNotFoundError(f"Input file not found: {input_path}")
+
+    if audio_loader is None:
+        from mlx_qwen3_asr.audio import load_audio_np
+
+        audio_loader = load_audio_np
 
     write_to_stdout = str(output_file) == "-"
     resolved_output: Path | None
@@ -225,6 +231,14 @@ def run_pipeline(
         start_idx, all_cues, detected_language = 0, [], ""
 
     if start_idx < total_chunks:
+        if session_factory is None or aligner_factory is None:
+            from mlx_qwen3_asr import ForcedAligner, Session
+
+            if session_factory is None:
+                session_factory = Session
+            if aligner_factory is None:
+                aligner_factory = ForcedAligner
+
         t_load = time.monotonic()
         _log(f"Loading ASR ({asr_model}) & Aligner ({aligner_model})...", quiet=quiet)
         session = session_factory(asr_model)
@@ -256,6 +270,7 @@ def run_pipeline(
                 language=chunk_lang,
                 text=getattr(result, "text", None),
                 offset_sec=offset_sec,
+                grouper=cue_grouper,
             )
             all_cues.extend(chunk_cues)
 
