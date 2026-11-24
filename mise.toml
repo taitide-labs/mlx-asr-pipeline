@@ -1,23 +1,27 @@
 #:schema https://mise.jdx.dev/schema/mise.json
 
 [tools]
-hk = "2.12"
-rumdl = "0.3.3"
+hk = "2.12.0"
+rumdl = "0.3.4"
 lychee = "0.24.2"
-typos = "1"
-gitleaks = "8"
-zizmor = "1"
+typos = "1.52.2"
+gitleaks = "8.30.1"
+zizmor = "1.32.0"
 "github:huacnlee/autocorrect" = "2.16.3"
 "github:1jehuang/mermaid-rs-renderer" = "0.3.1"
-uv = "0.13"
-ruff = "latest"
-ty = "latest"
-osv-scanner = "latest"
-
-[tasks.check]
-description = "Run all documentation, lint, test, and dependency audit checks"
-run = ["hk check --all --silent -n", "osv-scanner scan source --lockfile=uv.lock"]
+uv = "0.13.9"
+ruff = "0.17.6"
+ty = "0.0.108"
+osv-scanner = "2.7.1"
 
 [tasks.fmt]
 description = "Auto-fix documentation formatting, typography, and code formatting"
-run = "hk fix --all --silent -n"
+run = "hk fix --all -q -n -p docs -p code -p fmt"
+
+[tasks.check]
+description = "Run all documentation, lint, type, and test checks"
+run = "hk check --all -q -n"
+
+[tasks.audit]
+description = "Audit dependencies for known vulnerabilities"
+run = "osv-scanner scan source --lockfile=uv.lock"
