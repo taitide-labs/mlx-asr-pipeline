@@ -4,6 +4,7 @@
 .env
 .env*.local
 .rumdl_cache/
+videos/
 dist/
 .venv/
 __pycache__/
