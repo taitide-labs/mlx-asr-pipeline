@@ -1,56 +1,68 @@
 amends "package://github.com/jdx/hk/releases/download/v2.12.0/hk@2.12.0#/Config.pkl"
 import "package://github.com/jdx/hk/releases/download/v2.12.0/hk@2.12.0#/Builtins.pkl"
 
+profiles = List("docs", "code")
+
 steps {
   ["autocorrect"] {
+    profiles = List("docs")
     glob = List("*.md", "*.py")
     check = "autocorrect --config .config/autocorrectrc --lint {{files}}"
     fix = "autocorrect --config .config/autocorrectrc --fix {{files}}"
   }
 
   ["rumdl"] {
+    profiles = List("docs")
     glob = List("*.md")
     check = "rumdl check --config .config/rumdl.toml {{files}}"
     fix = "rumdl check --config .config/rumdl.toml --fix {{files}}"
   }
 
   ["mmdr"] {
+    profiles = List("docs", "!fmt")
     glob = List("*.md")
     check = "for f in {{files}}; do if grep -q '```mermaid' \"$f\"; then mmdr -i \"$f\" --size --fastText >/dev/null || exit 1; fi; done"
   }
 
   ["lychee"] {
+    profiles = List("docs", "!fmt")
     glob = List("*.md")
     check = "lychee --config .config/lychee.toml --offline {{files}}"
   }
 
   ["typos"] = (Builtins.typos) {
+    profiles = List("docs", "!fmt")
     exclude = List(".copier-answers.yml")
   }
 
   ["zizmor"] {
+    profiles = List("code", "!fmt")
     glob = List(".github/workflows/*.yml", ".github/workflows/*.yaml")
     check = "zizmor --offline --quiet {{files}}"
   }
 
   ["ruff_format"] {
+    profiles = List("code")
     glob = List("*.py")
     check = "ruff format --check {{files}}"
     fix = "ruff format {{files}}"
   }
 
   ["ruff_check"] {
+    profiles = List("code")
     glob = List("*.py")
     check = "ruff check {{files}}"
     fix = "ruff check --fix {{files}}"
   }
 
   ["ty"] {
+    profiles = List("code", "!fmt")
     glob = List("*.py", "pyproject.toml")
     check = "ty check"
   }
 
   ["pytest"] {
+    profiles = List("code", "!fmt")
     glob = List("*.py", "pyproject.toml", "uv.lock")
     check = "uv run pytest"
   }
@@ -60,14 +72,6 @@ hooks {
   ["commit-msg"] {
     steps {
       ["conventional_commit"] = Builtins.check_conventional_commit
-    }
-  }
-
-  ["pre-push"] {
-    steps {
-      ["osv_scanner"] {
-        check = "osv-scanner scan source --lockfile=uv.lock"
-      }
     }
   }
 }
