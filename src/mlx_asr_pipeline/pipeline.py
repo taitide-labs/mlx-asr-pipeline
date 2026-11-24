@@ -18,6 +18,7 @@ DEFAULT_ASR_MODEL = "moona3k/mlx-qwen3-asr-1.7b-8bit"
 DEFAULT_ALIGNER_MODEL = "Qwen/Qwen3-ForcedAligner-0.6B"
 DEFAULT_CHUNK_SECONDS = 300
 SAMPLE_RATE = 16000
+_PIPELINE_VERSION = 2
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,35 @@ def default_work_dir(input_path: Path) -> Path:
     fingerprint = f"{resolved}:{stat.st_size}:{stat.st_mtime_ns}".encode()
     digest = hashlib.sha256(fingerprint).hexdigest()[:16]
     return Path(tempfile.gettempdir()) / "mlx-asr-pipeline" / digest
+
+
+def trim_chunk_silence(
+    audio: np.ndarray,
+    *,
+    sr: int = SAMPLE_RATE,
+    rms_threshold: float = 1e-4,
+    frame_sec: float = 0.1,
+    pad_sec: float = 0.25,
+) -> tuple[np.ndarray, float]:
+    total = len(audio)
+    if total == 0:
+        return audio, 0.0
+
+    frame_samples = max(1, int(frame_sec * sr))
+    active_indices: list[int] = []
+    for idx, start in enumerate(range(0, total, frame_samples)):
+        frame = audio[start : min(total, start + frame_samples)]
+        rms = float(np.sqrt(np.mean(frame * frame)))
+        if rms >= rms_threshold:
+            active_indices.append(idx)
+
+    if not active_indices:
+        return audio[:0], 0.0
+
+    pad_samples = int(pad_sec * sr)
+    trim_start = max(0, active_indices[0] * frame_samples - pad_samples)
+    trim_end = min(total, (active_indices[-1] + 1) * frame_samples + pad_samples)
+    return audio[trim_start:trim_end], trim_start / sr
 
 
 def find_macro_chunk_boundaries(
@@ -100,6 +130,7 @@ def _checkpoint_fingerprint(
 ) -> dict[str, Any]:
     stat = input_path.resolve().stat()
     return {
+        "pipeline_version": _PIPELINE_VERSION,
         "input": str(input_path.resolve()),
         "size": stat.st_size,
         "mtime_ns": stat.st_mtime_ns,
@@ -249,30 +280,35 @@ def run_pipeline(
             s_idx, e_idx = boundaries[idx]
             offset_sec = s_idx / SAMPLE_RATE
             chunk_audio = audio_np[s_idx:e_idx]
+            trimmed_audio, trim_offset_sec = trim_chunk_silence(
+                chunk_audio, sr=SAMPLE_RATE
+            )
             t_chunk = time.monotonic()
 
-            result = session.transcribe(
-                chunk_audio,
-                context=context,
-                language=language,
-                return_timestamps=True,
-                forced_aligner=aligner,
-                verbose=verbose and not quiet,
-            )
+            if len(trimmed_audio) > 0:
+                result = session.transcribe(
+                    trimmed_audio,
+                    context=context,
+                    language=language,
+                    return_timestamps=True,
+                    forced_aligner=aligner,
+                    verbose=verbose and not quiet,
+                )
 
-            chunk_lang = str(getattr(result, "language", "") or language or "")
-            if not detected_language and chunk_lang:
-                detected_language = chunk_lang
+                chunk_lang = str(getattr(result, "language", "") or language or "")
+                if not detected_language and chunk_lang:
+                    detected_language = chunk_lang
 
-            segments = getattr(result, "segments", None) or []
-            chunk_cues = segments_to_cues(
-                segments,
-                language=chunk_lang,
-                text=getattr(result, "text", None),
-                offset_sec=offset_sec,
-                grouper=cue_grouper,
-            )
-            all_cues.extend(chunk_cues)
+                segments = getattr(result, "segments", None) or []
+                chunk_cues = segments_to_cues(
+                    segments,
+                    language=chunk_lang,
+                    text=getattr(result, "text", None),
+                    offset_sec=offset_sec + trim_offset_sec,
+                    context=context,
+                    grouper=cue_grouper,
+                )
+                all_cues.extend(chunk_cues)
 
             if resolved_output is not None:
                 write_srt(all_cues, resolved_output)
